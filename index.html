@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GADA — Geo-Alert Dispatch Agent | Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  body{font-family:system-ui,sans-serif;margin:0;background:#0d1b17;color:#e8f0ec}
+  header{padding:20px 32px;background:#12241e;border-bottom:1px solid #1f3a30}
+  h1{margin:0;font-size:20px} small{color:#8fb3a5}
+  .wrap{padding:24px 32px;max-width:1100px;margin:auto}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .card{background:#12241e;border:1px solid #1f3a30;border-radius:10px;padding:14px}
+  .card b{font-size:26px;display:block}
+  #map{height:340px;border-radius:10px;margin-bottom:20px}
+  table{width:100%;border-collapse:collapse;background:#12241e;border-radius:10px;overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;font-size:14px;border-bottom:1px solid #1f3a30}
+  .HIGH{color:#ff6b6b;font-weight:700}.MEDIUM{color:#ffc94d;font-weight:700}.LOW{color:#6bde8a;font-weight:700}
+  textarea{width:100%;height:120px;background:#0d1b17;color:#e8f0ec;border:1px solid #1f3a30;border-radius:8px}
+  .emergency{background:#12241e;border:1px solid #1f3a30;border-radius:10px;padding:16px 18px;margin:20px 0}
+  .emergency h2{margin:0 0 4px;font-size:16px}
+  .emergency small{color:#8fb3a5}
+  .emgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+  .em{background:#0d1b17;border:1px solid #1f3a30;border-radius:8px;padding:10px;text-align:center}
+  .em b{display:block;font-size:20px;color:#ffc94d}
+  .em span{font-size:12px;color:#8fb3a5}
+  footer{padding:16px 32px;border-top:1px solid #1f3a30;color:#8fb3a5;font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  footer a{color:#8fb3a5}
+  @media(max-width:700px){.cards,.emgrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+  <header><h1>🌍 GADA — Geo-Alert Dispatch Agent</h1><small>Laporan insiden real-time · diperbarui otomatis tiap 60 detik</small></header>
+
+  <div class="wrap">
+    <div class="cards">
+      <div class="card"><b id="cTotal">0</b>Total Laporan</div>
+      <div class="card"><b id="cHigh" style="color:#ff6b6b">0</b>Urgensi HIGH</div>
+      <div class="card"><b id="cMed" style="color:#ffc94d">0</b>Urgensi MEDIUM</div>
+      <div class="card"><b id="cLow" style="color:#6bde8a">0</b>Urgensi LOW</div>
+    </div>
+
+    <div id="map"></div>
+
+    <table><thead><tr><th>Waktu</th><th>Urgensi</th><th>Lokasi</th><th>Detail</th><th>Rekomendasi</th></tr></thead><tbody id="rows"></tbody></table>
+    <div id="fallback" style="display:none;margin-top:20px">
+      <p><small>Mode manual: tempel isi CSV lalu klik Render.</small></p>
+      <textarea id="paste"></textarea><button onclick="render(parseCSV(document.getElementById('paste').value))">Render</button>
+    </div>
+
+    <div class="emergency">
+      <h2>📞 Nomor Telepon Darurat</h2>
+      <small>Untuk kondisi darurat nyata, hubungi nomor di bawah. Laporan non-darurat tetap lewat bot Telegram GADA.</small>
+      <div class="emgrid">
+        <div class="em"><b>112</b><span>Darurat Nasional</span></div>
+        <div class="em"><b>110</b><span>Polisi</span></div>
+        <div class="em"><b>113</b><span>Pemadam Kebakaran</span></div>
+        <div class="em"><b>118</b><span>Ambulans</span></div>
+        <div class="em"><b>123</b><span>PLN (listrik)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© 2026 GADA — Geo-Alert Dispatch Agent · Powered by <a href="https://github.com/radenrap/geo-alert-dispatch-agent.git" target="_blank" rel="noopener">Raprock</a></span>
+    <span>Peta: <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Data: Google Sheets via proxy Netlify</span>
+  </footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+const CSV_URL = "/data.csv"; // local: file dummy di root; deploy: proxy Netlify (_redirects 200!) ke Google Sheet
+const GOOGLE_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTY4AIkZ3dTO4bT94n682atNYvTDD_vWozZMvVkBnaL0qno-qREeh8Sgw2Jz-SEDs4uoDecf-IxL0A0/pub?gid=0&single=true&output=csv";
+
+const LOCATION_DB = {
+  "jl. sudirman":[-6.2088,106.8211], "jl. proklamator":[-6.1900,106.8380],
+  "jl. ahmad yani":[-6.1780,106.8500], "jl. kartini":[-6.1475,106.8425],
+  "monas":[-6.1754,106.8272], "bandung":[-6.9175,107.6191],
+  "surabaya":[-7.2575,112.7521]
+};
+const COLORS = {HIGH:"#ff6b6b", MEDIUM:"#ffc94d", LOW:"#6bde8a"};
+const map = L.map("map").setView([-6.18,106.84],12);
+// Basemap keyless (tanpa API key): OpenStreetMap standard — reliabel untuk local preview maupun deploy.
+// Alternatif gelap sesuai tema (juga keyless): https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"&copy; OpenStreetMap contributors",maxZoom:19}).addTo(map);
+const markers = L.layerGroup().addTo(map);
+
+function parseCSV(t){const rows=[];let row=[],cur="",inQ=false;
+ for(let i=0;i<t.length;i++){const c=t[i];
+  if(inQ){if(c=='"'){if(t[i+1]=='"'){cur+='"';i++;}else inQ=false;}else cur+=c;}
+  else{if(c=='"')inQ=true;else if(c==","){row.push(cur);cur="";}
+   else if(c=="\n"){row.push(cur);rows.push(row);row=[];cur="";}
+   else if(c!="\r")cur+=c;}}
+ if(cur!==""||row.length){row.push(cur);rows.push(row);}return rows;}
+
+function render(rows){
+  if(!rows.length)return;
+  const head=rows[0].map(h=>h.trim().toLowerCase());
+  const ix=n=>head.indexOf(n);
+  if(ix("urgensi")<0||ix("lokasi")<0)return; // header tidak sesuai skema → jangan render setengah-setengah
+  const data=rows.slice(1).filter(r=>r.length>1);
+  document.getElementById("cTotal").textContent=data.length;
+  document.getElementById("cHigh").textContent=data.filter(r=>r[ix("urgensi")]=="HIGH").length;
+  document.getElementById("cMed").textContent=data.filter(r=>r[ix("urgensi")]=="MEDIUM").length;
+  document.getElementById("cLow").textContent=data.filter(r=>r[ix("urgensi")]=="LOW").length;
+  document.getElementById("rows").innerHTML=data.slice().reverse().map(r=>
+    `<tr><td>${r[ix("waktu")]||""}</td><td class="${r[ix("urgensi")]}">${r[ix("urgensi")]}</td><td>${r[ix("lokasi")]}</td><td>${r[ix("detail")]}</td><td>${r[ix("rekomendasi")]}</td></tr>`).join("");
+  markers.clearLayers();
+  data.forEach(r=>{const loc=(r[ix("lokasi")]||"").toLowerCase();
+    const hit=Object.keys(LOCATION_DB).find(k=>loc.includes(k));
+    if(hit){const u=r[ix("urgensi")];
+      L.circleMarker(LOCATION_DB[hit],{radius:9,color:COLORS[u]||"#8fb3a5",fillOpacity:.8})
+       .bindPopup(`<b>${u}</b><br>${r[ix("lokasi")]}<br>${r[ix("detail")]}`).addTo(markers);}});
+}
+
+async function load(){
+  // Fallback chain: proxy same-origin (/data.csv) → Google Sheet langsung → mode manual
+  for(const url of [CSV_URL,GOOGLE_CSV_URL]){
+    try{
+      const res=await fetch(url,{cache:"no-store"});
+      if(!res.ok)continue;
+      const rows=parseCSV(await res.text());
+      if(rows.length>1){render(rows);return;}
+    }catch(e){}
+  }
+  document.getElementById("fallback").style.display="block";
+}
+load(); setInterval(load,60000);
+</script>
+
+</body>
+</html>

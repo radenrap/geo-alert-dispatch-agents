@@ -94,10 +94,7 @@ gada-dashboard/
     ├── email_screenshot.png       # Screenshot asli: email dispatch Make.com (Gmail)
     ├── sheets_screenshot.png      # Screenshot asli: Google Sheets "GADA Log"
     ├── dashboard_screenshot.jpg   # Screenshot asli: dashboard (statistik, peta, tabel, nomor darurat)
-    ├── system_architechture.png   # Diagram arsitektur pipeline
-    ├── placeholder_email.svg      # Placeholder lama — tidak dipakai lagi, boleh dihapus
-    ├── placeholder_sheets.svg     # Placeholder lama — tidak dipakai lagi, boleh dihapus
-    └── placeholder_dashboard.svg  # Placeholder lama — tidak dipakai lagi, boleh dihapus
+    └── system_architechture.png   # Diagram arsitektur pipeline
 ```
 
 ## Basemap Peta
