@@ -1,6 +1,6 @@
 # 🌍 GADA — Geo-Alert Dispatch Agent
 Triase & distribusi laporan insiden publik berbasis AI Agent.
-Hermes Agent on Alibaba Cloud SAS (course bisa.ai) · Model Qwen3.8-Max.
+Hermes Agent on Alibaba Cloud SAS · Model Qwen3.8-Max.
 
 ## Nilai Bisnis
 Triase laporan warga dari ±30 menit menjadi <15 detik: analisis urgensi otomatis
@@ -113,30 +113,28 @@ gada-dashboard/
 
 ## Demo
 
-### 1. Telegram → Triase Agent (screenshot asli)
+### 1. Telegram → Triase Agent
 Laporan warga masuk via Telegram, skill `dispatch-alert-v3` dibaca agent, hasil triase
 urgensi HIGH + rekomendasi, lalu status dispatch terkirim.
 
 ![Screenshot Telegram — laporan warga dibaca skill dispatch-alert-v3 dan hasil triase urgensi HIGH](img/telegram_screenshot.png)
 
-### 2. Email dispatch (screenshot asli)
+### 2. Email dispatch
 Email otomatis via scenario Make.com (Gmail): subjek `[HIGH] Insiden: Jl. Kartini` berisi
 lokasi, detail, rekomendasi AI, dan timestamp — dikirim tanpa SMTP sendiri.
 
 ![Screenshot Gmail — email dispatch berformat urgensi HIGH dari GADA System](img/email_screenshot.png)
 
-### 3. Google Sheets log insiden (screenshot asli)
+### 3. Google Sheets log insiden
 Sheet "GADA Log" menampung setiap dispatch dengan kolom sesuai skema CSV
 (`waktu, urgensi, lokasi, detail, rekomendasi`) — sekaligus sumber data dashboard.
 
 ![Screenshot Google Sheets GADA Log dengan kolom waktu, urgensi, lokasi, detail, rekomendasi](img/sheets_screenshot.png)
 
-### 4. Dashboard publik (screenshot asli)
+### 4. Dashboard publik
 Tampilan dashboard utuh: kartu statistik urgensi, peta Leaflet (basemap OSM) dengan
 marker berwarna sesuai urgensi, tabel laporan, blok Nomor Telepon Darurat, dan footer.
 
 ![Screenshot dashboard GADA — kartu statistik, peta Leaflet dengan marker urgensi, tabel laporan, nomor telepon darurat, dan footer](img/dashboard_screenshot.jpg)
 
-> Semua screenshot demo di atas sudah asli; hanya URL video demo yang masih menyusul.
-
-- [ ] URL Video demo 60 detik: _isi setelah upload_
+> Semua screenshot demo di atas sudah asli;
